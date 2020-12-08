@@ -242,11 +242,11 @@ prog.createNotes = function () { //
 
     prog.notes.note_up = new prog.graphics.classes.Image(prog.images.notes, 73, 0, 17, 43, 0, 0, 17, 43);
     prog.notes.note_up.x_anchor = -10;
-    prog.notes.note_up.y_anchor = -36;
+    prog.notes.note_up.y_anchor = -34;
     //prog.notes.container.children.push(prog.notes.note_up);
 
     prog.notes.note_down = new prog.graphics.classes.Image(prog.images.notes, 73, 43, 17, 43, 0, 0, 17, 43);
-    prog.notes.note_down.x_anchor = -10;
+    prog.notes.note_down.x_anchor = -8;
     prog.notes.note_down.y_anchor = -7;
     //prog.notes.container.children.push(prog.notes.note_down);
 
@@ -254,18 +254,21 @@ prog.createNotes = function () { //
         draw: function (ctx) {
             var i, l;
             ctx.fillStyle = "#000000";
-            ctx.fillRect (20, 100, 6, 160);
-            ctx.fillRect (ctx.canvas.width - 26, 100, 6, 160);
-            i = 0, l = 10;
+            ctx.fillRect (20, 100, 6, 124);
+            ctx.fillRect (ctx.canvas.width - 26, 100, 6, 124);
+            i = 0, l = 11;
             while (i < l) {
-                ctx.fillRect (20, (i < 5) ? (100 + i * 12) : (160 + i * 12), ctx.canvas.width - 40, 4);
+                if (i!=5) {
+                    ctx.fillRect (20, (100 + i * 12), ctx.canvas.width - 40, 4);
+                }
+                // ctx.fillRect (20, (i < 5) ? (100 + i * 12) : (160 + i * 12), ctx.canvas.width - 40, 4);
                 ++i;
             }
-            i = 75, l = ctx.canvas.width - 40;
+            i = 85, l = ctx.canvas.width - 40;
             while (i < l) {
                 ctx.fillRect(i, 100, 2, 52);
-                ctx.fillRect(i, 200, 2, 52);
-                i += 105;
+                ctx.fillRect(i, 172, 2, 52);
+                i += 120;
             }
             
         }
@@ -275,37 +278,64 @@ prog.createNotes = function () { //
 
 };
 
-/**
-    type right  or  left  or  both
-*/
-prog.generateNotes = function (from, to) {
-    if (!from || from < 1) { from = 1; };
-    if (!to || to > 88) { to = 88; };
-    if (to < from) { from = 1; to = 88; };
-    var gap = to - from + 1;
-    console.log ('from = '+ from +', to = '+to+", gap = "+gap);
-    var i = 0;
-    var l = Math.floor((prog.graphics.canvas.width - 40 - 100) / 30);
-    prog.notes_marking = [];
-    while (i < l) {
-        prog.notes_marking.push(from + Math.floor(Math.random() * gap));
-        ++i;
-    }
+prog.init = function () {
+    var i, l, t, hh, gap;
+    prog.graphics.canvas.width = 1200;
+    prog.graphics.canvas.height = 400;
+    prog.whiteNotes = [0,2,4,5,7,9,11];
+    prog.blackNotes = [1,3,6,8,10];
 
-    i = 0; l = 128;
-    var hh = 0;
-    gap = 5.5;
+    i = 0; l = 128; hh = 0; gap = 6;
     prog.notes_pos = [];
     prog.notes_pos.length = l;
+    //--l;
+    //while (i < l) {
+    //    prog.notes_pos[i]  = hh;
+    //    if (i % 12 == 11 || i % 12 == 4) {
+    //        hh += gap;
+    //    }
+    //    prog.notes_pos[i+1] = hh;
+    //    hh += gap;
+    //    i+=2;
+    //}
+    
     while (i < l) {
-        prog.notes_pos[i] = hh;
+        prog.notes_pos[i]  = hh;
         ++i;
-        if (i % 12 != 0 && i % 12 != 5) {
+         t = i % 12;
+        if (t == 2 || t == 4 || t == 5 || t == 7 || t == 9 || t == 11 || (i != 0 && t == 0)) {
             hh += gap;
         }
     }
     //var notes;if (type == 'right') { notes = ['mi','fa','col','la','ci','do','re',   'mi','fa','col','la','ci','do','re','mi','fa','col','la',   'ci','do','re','mi','fa','col','la'];} else if (type == 'left') { notes = ['do','re','mi','fa','col','la','ci',   'do','re','mi','fa','col','la','ci','do','re','mi','fa',    'col','la','ci','do','re','mi','fa'];} else {var pos   = [];  var notes = ['do','re','mi','fa','col','la','ci',   'do','re','mi','fa','col','la','ci','do','re','mi','fa',    'col','la','ci','do','re','mi','fa',         'col','la','ci',   'do','re','mi','fa','col','la','ci','do','re','mi','fa',    'col','la','ci','do','re','mi','fa'];}
 
+
+    prog.generateNotes({'from':30, 'to':88, 'amount':Math.floor((prog.graphics.canvas.width - 40 - 100) / 30)});
+    prog.initGraphics();
+    prog.audio.connectMIDI();
+}
+/**
+    from: 0-127   - diapason from
+    to: 0-127     - diapason to
+    ampunt        - amount of generated notes
+    sharp: true   - use sharp
+    flat:  true   - use flat
+*/
+prog.generateNotes = function (params) {
+    if (!params.from || params.from < 0) { params.from = 0; };
+    if (!params.to || params.to > 128) { params.to = 128; };
+    if (params.to < params.from) { params.from = 1; params.to = 128; };
+    if (!params.sharp) { params.sharp = false; }
+    if (!params.flat)  { params.flat  = false; }
+    var gap = params.to - params.from + 1;
+    //console.log ('from = '+ from +', to = '+to+", gap = "+gap);
+    var i = 0;
+    prog.notes_marking = [];
+    while (i < params.amount) {
+        prog.notes_marking.push(params.from + Math.floor(Math.random() * gap));
+        //prog.notes_marking.push(60+i);
+        ++i;
+    }
 }
 
 
@@ -332,19 +362,32 @@ prog.initGraphics = function () {
     prog.notes.trebleClef.draw(prog.notesCtx);
 
     prog.notes.bassClef.x = 32 + prog.notes.bassClef.x_anchor;
-    prog.notes.bassClef.y = 197 + prog.notes.bassClef.y_anchor;
+    prog.notes.bassClef.y = 173 + prog.notes.bassClef.y_anchor;
     prog.notes.bassClef.draw(prog.notesCtx);
     //prog.notesCtx.drawImage(prog.notes.trebleClef.image, 0, 0, prog.notes.trebleClef.width_src, prog.notes.trebleClef.height_src, 60 + prog.notes.trebleClef.x_anchor, 125 + prog.notes.trebleClef.y_anchor, prog.notes.trebleClef.width_src, prog.notes.trebleClef.height_src, );
     // 77 - fa - begin from up to down 100px
-    //var y_board = Math.floor(77 / 12); y_board = (77 - y_board) * 5.5 + 100;
+    //var y_board = Math.floor(77 / 12); y_board = (77 - y_board) * 6 + 100;
     var y_board = prog.notes_pos[77] + 100;
-    var xx = 100;
+    var xx = 100, t, k, id_note;
     var i = 0, l = prog.notes_marking.length;
     var b = prog.notes.note_up;
     while (i < l) {
+        id_note = prog.notes_marking[i];
+        t = (Math.floor(id_note / 12) % 2); // get number of octave and  get first note 
+        k = id_note % 12;
+        if (t == 0) {
+            if (k == 0 || k == 1 || k == 4 || k == 7 || k == 8 || k == 11) { t = 0; } else { t = 1; }
+        } else {
+            if (k == 0 || k == 1 || k == 4 || k == 7 || k == 8 || k == 11) { t = 1; } else { t = 0; }
+        }
         b.x = xx + b.x_anchor;
-        //b.y = y_board - (prog.notes_marking[i] * 5.5) + b.y_anchor;
-        b.y = y_board - prog.notes_pos[prog.notes_marking[i]] + b.y_anchor;
+        //b.y = y_board - (prog.notes_marking[i] * 6) + b.y_anchor;
+        b.y = y_board - prog.notes_pos[id_note] + b.y_anchor;
+        if (t == 1) {
+           prog.notesCtx.fillRect(b.x-14-b.x_anchor, b.y-b.y_anchor, 26, 4);
+        } else {
+           prog.notesCtx.fillRect(b.x-14-b.x_anchor, b.y-3+b.height, 26, 4);
+        }
         b.draw(prog.notesCtx);
         xx += 30;
        ++i;
@@ -365,11 +408,7 @@ prog.initGraphics = function () {
         console.log('loaded');
         var start_prog = function (e) {
             window.document.removeEventListener('click', start_prog);
-            prog.graphics.canvas.width = 1200;
-            prog.graphics.canvas.height = 400;
-            prog.generateNotes(60, 61);
-            prog.initGraphics();
-            prog.audio.connectMIDI();
+            prog.init();
             prog.mainLoop.start();
         };
         window.document.addEventListener('click', start_prog);
