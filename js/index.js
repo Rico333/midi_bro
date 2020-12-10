@@ -1,10 +1,12 @@
 'use strict';
-if (!window.prog)             window.prog          = {};
-if (!window.prog.audio)       window.prog.audio    = {};
-if (!window.prog.elements)    window.prog.elements = {};
-if (!window.prog.images)      window.prog.images   = {};
-if (!window.prog.sounds)      window.prog.sounds   = {};
-if (!window.prog.notes)       window.prog.notes    = {};
+if (!window.prog)             window.prog            = {};
+if (!window.prog.audio)       window.prog.audio      = {};
+if (!window.prog.elements)    window.prog.elements   = {};
+if (!window.prog.images)      window.prog.images     = {};
+if (!window.prog.sounds)      window.prog.sounds     = {};
+if (!window.prog.notes)       window.prog.notes      = {};
+if (!window.prog.navigation)  window.prog.navigation = {};
+if (!window.prog.init)        window.prog.init       = {};
 
 prog.audio.globalValue = 0.5;
 prog.audio.sound_path = "audio/PIANO B2.wav";
@@ -201,6 +203,8 @@ prog.checkHit = function (frequency, data) {
         prog.audio.playNote(frequency, data);
         prog.drawNote (prog.notes_marking[prog.notes_iterator], prog.notes.note_up_green);
         ++prog.notes_iterator;
+        if (prog.notes_iterator >= prog.notes_marking.length)
+            prog.notes_iterator = 0;
     } else {
         console.log ('MESS !');
         prog.drawNote (prog.notes_marking[prog.notes_iterator], prog.notes.note_up_pink);
@@ -343,7 +347,21 @@ prog.createNotes = function () { //
 
 };
 
-prog.init = function () {
+
+
+
+
+prog.init.init_panel = function () {
+    prog.navigation.input_making_notes_from = document.getElementById('input_making_notes_from');
+    prog.navigation.input_making_notes_to   = document.getElementById('input_making_notes_to');
+    prog.navigation.btn_generate_notes      = document.getElementById('btn_generate_notes');
+    prog.navigation.btn_generate_notes.onclick = function (e) {
+        prog.generateNotes({'from': parseInt(prog.navigation.input_making_notes_from.value), 'to': parseInt(prog.navigation.input_making_notes_to.value), 'amount':Math.floor((prog.graphics.canvas.width - 40 - 100) / 30)});
+        prog.redrawNotes();
+        prog.notes_iterator = 0;
+    };
+};
+prog.init.init = function () {
     var i, l, t, hh, gap;
     prog.justPlay = false;
     prog.notes_iterator = 0;
@@ -379,10 +397,14 @@ prog.init = function () {
     //var notes;if (type == 'right') { notes = ['mi','fa','col','la','ci','do','re',   'mi','fa','col','la','ci','do','re','mi','fa','col','la',   'ci','do','re','mi','fa','col','la'];} else if (type == 'left') { notes = ['do','re','mi','fa','col','la','ci',   'do','re','mi','fa','col','la','ci','do','re','mi','fa',    'col','la','ci','do','re','mi','fa'];} else {var pos   = [];  var notes = ['do','re','mi','fa','col','la','ci',   'do','re','mi','fa','col','la','ci','do','re','mi','fa',    'col','la','ci','do','re','mi','fa',         'col','la','ci',   'do','re','mi','fa','col','la','ci','do','re','mi','fa',    'col','la','ci','do','re','mi','fa'];}
 
 
-    prog.generateNotes({'from':36, 'to':96, 'amount':Math.floor((prog.graphics.canvas.width - 40 - 100) / 30)});
+    prog.generateNotes({'from':36, 'to':96, 'amount':Math.floor((prog.graphics.canvas.width - 40 - 100) / 30 +1)});
     prog.initGraphics();
+
+    prog.init.init_panel();
+
     prog.audio.connectMIDI();
-}
+};
+
 /**
     from: 0-127   - diapason from
     to: 0-127     - diapason to
@@ -398,18 +420,38 @@ prog.generateNotes = function (params) {
     if (!params.flat)  { params.flat  = false; }
     var gap = params.to - params.from + 1;
     //console.log ('from = '+ from +', to = '+to+", gap = "+gap);
-    var i = 0;
+    var i = 0, l, k, notes = [];
     prog.notes_marking = [];
-    while (i < params.amount) {
-        //prog.notes_marking.push(params.from + Math.floor(Math.random() * gap));
-        prog.notes_marking.push(36+i);
-        ++i;
+    if (params.sharp && params.flat) {
+        while (i < params.amount) {
+            prog.notes_marking.push(params.from + Math.floor(Math.random() * gap));
+            // prog.notes_marking.push(36+i);
+            ++i;
+        }
+    } else {
+        i = params.from;
+        l = params.to >= 128 ? 128 : params.to + 1;
+        while (i < l) {
+            k = i % 12;
+            if (k != 1 && k != 3 && k != 6 && k != 8 && k != 10) {
+                notes.push(i);
+            }
+            ++i;
+        };
+        i = 0, l = notes.length;
+        while (i < params.amount) {
+            prog.notes_marking.push(notes[Math.floor(Math.random() * notes.length)]);
+            // prog.notes_marking.push(notes[i]);
+            ++i;
+        }
     }
-}
+
+};
 prog.restartNotes = function () {
     prog.notes_iterator = 0;
     prog.redrawNotes();
 }
+
 
 
 prog.redrawNotes = function () {
@@ -435,8 +477,10 @@ prog.redrawNotes = function () {
 
     // 77 - fa - begin from up to down 100px
     //var y_board = Math.floor(77 / 12); y_board = (77 - y_board) * 6 + 100;
+
     var y_board = prog.notes_pos[77] + 100;
-    var xx = 100, t, k, id_note;
+    var x_hatch, y_hatch, l_hatch;
+    var xx = 100, yy, t, k, id_note, top_border_id = 77, bottom_border_id = 53, gap_border, i_border;
     var i = 0, l = prog.notes_marking.length;
     var b = prog.notes.note_up;
     while (i < l) {
@@ -451,11 +495,27 @@ prog.redrawNotes = function () {
         b.x = xx + b.x_anchor;
         //b.y = y_board - (prog.notes_marking[i] * 6) + b.y_anchor;
         b.y = y_board - prog.notes_pos[id_note] + b.y_anchor;
+        x_hatch = b.x-14-b.x_anchor;
         if (t == 1) {
-           prog.notesCtx.fillRect(b.x-14-b.x_anchor, b.y-b.y_anchor, 26, 4);
+            // l_hatch = b.y-b.y_anchor;
+            prog.notesCtx.fillRect(b.x-14-b.x_anchor, b.y-b.y_anchor, 26, 4);
         } else {
-           prog.notesCtx.fillRect(b.x-14-b.x_anchor, b.y-3+b.height, 26, 4);
+            // l_hatch = b.y-15+b.height;
+            prog.notesCtx.fillRect(b.x-14-b.x_anchor, b.y-3+b.height, 26, 4);
         }
+        //if ( id_note > top_border_id) {
+        //    i_border = 100;
+        //    gap_border = b.y-3+b.height; 
+        //    yy = 100;
+        //    while (i_border >= gap_border) { 
+        //        prog.notesCtx.fillRect(b.x-14-b.x_anchor, i_border, 26, 4);
+        //        // prog.notesCtx.fillRect(b.x-14-b.x_anchor, b.y-3+b.height, 26, 4);
+        //        i_border -= 12;
+        //    }
+        //} else {
+        //    prog.notesCtx.fillRect(b.x-14-b.x_anchor, b.y-15+b.height, 26, 4);
+        //}
+
         b.draw(prog.notesCtx);
         xx += 30;
        ++i;
@@ -508,7 +568,7 @@ prog.playForFun = function () {
         console.log('loaded');
         var start_prog = function (e) {
             window.document.removeEventListener('click', start_prog);
-            prog.init();
+            prog.init.init();
             prog.mainLoop.start();
         };
         window.document.addEventListener('click', start_prog);
