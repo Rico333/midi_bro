@@ -480,13 +480,14 @@ prog.redrawNotes = function () {
 
     var y_board = prog.notes_pos[77] + 100;
     var x_hatch, y_hatch, l_hatch;
-    var xx = 100, yy, t, k, id_note, top_border_id = 77, bottom_border_id = 53, gap_border, i_border;
+    var xx = 100, yy, t, k, id_note, top_border_id = 77, bottom_border_id = 43, gap_border, i_border, l_border;
     var i = 0, l = prog.notes_marking.length;
     var b = prog.notes.note_up;
     while (i < l) {
         id_note = prog.notes_marking[i];
         t = (Math.floor(id_note / 12) % 2); // get number of octave and  get first note 
         k = id_note % 12;
+        // if (k == 0 || k == 1 || k == 4 || k == 7 || k == 8 || k == 11) { t = t == 1 ? 1 : 0; } else { t = t == 1 ? 0 : 1; }
         if (t == 0) {
             if (k == 0 || k == 1 || k == 4 || k == 7 || k == 8 || k == 11) { t = 0; } else { t = 1; }
         } else {
@@ -495,13 +496,38 @@ prog.redrawNotes = function () {
         b.x = xx + b.x_anchor;
         //b.y = y_board - (prog.notes_marking[i] * 6) + b.y_anchor;
         b.y = y_board - prog.notes_pos[id_note] + b.y_anchor;
-        x_hatch = b.x-14-b.x_anchor;
+        xx = b.x-14-b.x_anchor;
         if (t == 1) {
             // l_hatch = b.y-b.y_anchor;
-            prog.notesCtx.fillRect(b.x-14-b.x_anchor, b.y-b.y_anchor, 26, 4);
+            yy = b.y-b.y_anchor;
+            // prog.notesCtx.fillRect(b.x-14-b.x_anchor, b.y-b.y_anchor, 26, 4);
         } else {
             // l_hatch = b.y-15+b.height;
-            prog.notesCtx.fillRect(b.x-14-b.x_anchor, b.y-3+b.height, 26, 4);
+            yy = b.y-3+b.height;
+            // prog.notesCtx.fillRect(b.x-14-b.x_anchor, b.y-3+b.height, 26, 4);
+        }
+        if ( id_note > top_border_id) {
+            i_border = 78; l_border = id_note + 1;
+        } else {
+            i_border = id_note + 1; l_border = 42;
+            //prog.notesCtx.fillRect(b.x-14-b.x_anchor, b.y-15+b.height, 26, 4);
+        }
+        while (i_border <= l_border) {
+            t = (Math.floor(i_border / 12) % 2); // get number of octave and  get first note 
+            k = i_border % 12;
+            if (t == 0) {
+                if (k == 0 || k == 4 || k == 7 || k == 11) {
+                     prog.notesCtx.fillRect(xx, y_board - prog.notes_pos[i_border] + 6, 26, 4);
+                }
+            } else {
+                 if (k == 2 || k == 5 || k == 7 || k == 9) {
+                     prog.notesCtx.fillRect(xx, y_board - prog.notes_pos[i_border] + 6, 26, 4);
+                }
+            }
+            // if (prog.whiteNotes.includes(i_border % 12))
+            //     prog.notesCtx.fillRect(xx, y_board - prog.notes_pos[i_border], 26, 4);
+            // prog.notesCtx.fillRect(b.x-14-b.x_anchor, b.y-3+b.height, 26, 4);
+            ++i_border;
         }
         //if ( id_note > top_border_id) {
         //    i_border = 100;
