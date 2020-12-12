@@ -1,4 +1,22 @@
-*{
+* {
 	background-color: #333333;
 	color: #DDDDDD;
+}
+
+#main-container {
+	display: inline-block;
+	margin: 0 20px;
+}
+
+#slider_volume {
+	display: inline-block;
+}
+
+#btn_play_for_fun {
+	background-color: #005555;
+	border: 2px solid black;
+	border-radius: 5px;
+}
+#btn_play_for_fun:hover {
+	background-color: #555500;
 }

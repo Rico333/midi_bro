@@ -1,23 +1,41 @@
 <html>
 	<head>
-		<header name="Access-Control-Allow-Origin" value="*" />
-        <header name="Access-Control-Allow-Headers" value="Origin, Accept, X-Requested-With, Content-Type, If-Modified-Since" />
-        <header name="Access-Control-Allow-Methods" value="GET, OPTIONS, HEAD" />
+		<meta charset="UTF-8">
+		<meta name="Access-Control-Allow-Origin" value="*" >
+        <meta name="Access-Control-Allow-Headers" value="Origin, Accept, X-Requested-With, Content-Type, If-Modified-Since" >
+        <meta name="Access-Control-Allow-Methods" value="GET, OPTIONS, HEAD" >
 		<title>Midi Bro</title>
 		<link rel="stylesheet" href="css/index.css">
 	</head>
 	<body>
-		<H1>MIDI BRO</H1>
-		<div>
-			<button id="btn_generate_notes">Generate Notes</button>
-			first note id <input id="input_making_notes_from" type="text" value="36"/>
-			last note id  <input id="input_making_notes_to" type="text" value="96" />
+		<div id="main-container">
+			<span><b>MIDI BRO</b></span>
+			<div>
+				<button id="btn_generate_notes">Generate Notes</button>
+				first note id <input id="input_making_notes_from" type="text" value="35"/>
+				last note id  <input id="input_making_notes_to" type="text" value="89" />
+				<div class="slidecontainer" id="slider_volume">
+  					Volume : <input type="range" min="1" max="100" value="33" class="slider">
+  					<b>33</b>
+				</div>
+				<!--<div class="slidecontainer" id="slider_attack">
+  					<input type="range" min="1" max="100" value="100" class="slider">
+  					<b>100</b>
+				</div>
+				<div class="slidecontainer" id="slider_release">
+  					<input type="range" min="1" max="100" value="100" class="slider">
+  					<b>100</b>
+				</div>-->
+				Sound : <input type="file"  id="newSound" />
+				<button id="btn_play_for_fun">Play</button>
+			</div>
 			<br />
-
+			
+			
 		</div>
-		<input type="file"  id="newSound" />
 		<script type="text/javascript" src="js/tools.js"></script>
 		<script type="text/javascript" src="js/graphics.js"></script>
+		<script type="text/javascript" src="js/htmlElements.js"></script>
 		<script type="text/javascript" src="js/index.js"></script>
 		<script type="text/javascript" src="js/controller.js"></script>
 	</body>
