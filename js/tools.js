@@ -119,6 +119,8 @@ window.prog.tools.preloader = {
 		}
 		if( l <= 0 ){
 			window.clearInterval( this.i_interval );
+			var preloader_callback = this.callback;
+			this.callback = null;
 			var callbacks = this.callbacks;
 			this.callbacks = [];
 			i = 0, l = callbacks.length; 
@@ -130,9 +132,19 @@ window.prog.tools.preloader = {
 				}
 				++i;
 			}
-			if(this.callback != null ) this.callback();
+			if(preloader_callback) preloader_callback();
 		}
 	}
+};
+
+prog.tools.base64ToArrayBuffer = function (base64) {
+    var binary_string = window.atob(base64);
+    var len = binary_string.length;
+    var bytes = new Uint8Array(len);
+    for (var i = 0; i < len; i++) {
+        bytes[i] = binary_string.charCodeAt(i);
+    }
+    return bytes.buffer;
 };
 
 

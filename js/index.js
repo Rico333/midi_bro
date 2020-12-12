@@ -40,30 +40,32 @@ prog.audio.onMIDISuccess = function(midiAccess) {
 	//prog.audio.source.connect(prog.audio.masterVolume).connect(prog.audio.panner).connect(prog.audio.audio_context.destination);
 
 
-      prog.audio.source_buffer = prog.audio.audio_context.createBufferSource();
-        var request = new XMLHttpRequest();
-        request.open('GET', prog.audio.sound_path, true);
-        request.responseType = 'arraybuffer';
-        request.onload = function() {
-          var audioData = request.response;
-
-          prog.audio.audio_context.decodeAudioData(audioData, function(buffer) {
-              var myBuffer = buffer;
-              prog.audio.buffer = buffer;
-              var ongLength = buffer.duration;
-              prog.audio.source_buffer.buffer = myBuffer;
-              prog.audio.source_buffer.playbackRate.value = 1;
-              prog.audio.source_buffer.connect(prog.audio.audio_context.destination);
-              prog.audio.source_buffer.loop = true;
-
-             // loopstartControl.setAttribute('max', Math.floor(songLength));
-             // loopendControl.setAttribute('max', Math.floor(songLength));
-            },
-
-            function (e) {"Error with decoding audio data" + e.error});
-
-        }
-        request.send();
+    prog.audio.source_buffer = prog.audio.audio_context.createBufferSource();
+    prog.audio.load_buffer_promise = function(buffer) {
+         prog.audio.buffer = buffer;
+         var ongLength = buffer.duration;
+         prog.audio.source_buffer.buffer = buffer;
+         prog.audio.source_buffer.playbackRate.value = 1;
+         prog.audio.source_buffer.connect(prog.audio.audio_context.destination);
+         //prog.audio.source_buffer.loop = true;
+    
+        // loopstartControl.setAttribute('max', Math.floor(songLength));
+        // loopendControl.setAttribute('max', Math.floor(songLength));
+    };
+    /*
+    var request = new XMLHttpRequest();
+    request.open('GET', prog.audio.sound_path, true);
+    request.responseType = 'arraybuffer';
+    request.onload = function() {
+        var audioData = request.response;
+        //var audioData = prog.tools.base64ToArrayBuffer (window.pianob2_base64);   
+        prog.audio.audio_context.decodeAudioData(audioData, prog.audio.load_buffer_promise,
+        function (e) {"Error with decoding audio data" + e.error});
+    }
+    request.send();
+    */
+    var audioData = prog.tools.base64ToArrayBuffer (window.pianob2_base64);   
+    prog.audio.audio_context.decodeAudioData(audioData, prog.audio.load_buffer_promise, function (e) {"Error with decoding audio data" + e.error});
 
 	//prog.audio.byteArray = Base64Binary.decodeArrayBuffer(prog.audio.sound);
 	console.dir(prog.audio.source);
@@ -171,6 +173,7 @@ prog.audio.onMIDISuccess = function(midiAccess) {
     	// each time there is a midi message call the onMIDIMessage function
     	input.value.onmidimessage = prog.audio.onMIDIMessage;
 	}
+
 };
 
 prog.audio.onMIDIFailure = function () {
@@ -246,7 +249,7 @@ prog.drawNote = function (id_note, notee) {
 
 
 prog.newSound = document.getElementById('newSound');
-prog.newSound.onchange = function (e) {
+prog.newSound.onchange_1 = function (e) {
     return;
     //console.dir(arguments); return;
     if (!prog.newSound.files || prog.newSound.files.length < 1)
@@ -268,6 +271,30 @@ prog.newSound.onchange = function (e) {
         console.log('prog.newSound.onchange loaded');
     };
     prog.tools.preloader.start();
+};
+
+prog.newSound.onchange = function (e) {
+     if (!prog.newSound.files || prog.newSound.files.length < 1)
+        return;
+     prog.tools.preloader.add ({
+        'target' : new FileReader(),
+        'start' : function (wrap) { wrap.params.target.readAsArrayBuffer(prog.newSound.files[0]); },
+        //'start_func' : 'readAsDataURL',
+        //'start_func_args' : [prog.newSound.files[0]],
+        'callback' : function (wrap) {
+            var arrayBuffer = wrap.params.target.result;
+            // var array = new Uint8Array(arrayBuffer);
+            // var binaryString = String.fromCharCode.apply(null, array);
+            //var data = wrap.params.target.result.split(',');
+            //prog.decodedSoundData = btoa(data[1]);                  // the actual conversion of data from binary to base64 format
+            prog.audio.source_buffer.disconnect();
+            prog.audio.source_buffer = prog.audio.audio_context.createBufferSource();  
+            prog.audio.audio_context.decodeAudioData(arrayBuffer, prog.audio.load_buffer_promise, function (e) {"Error with decoding audio data" + e.error}); 
+            //prog.audio.audio_context.decodeAudioData(audioData, prog.audio.load_buffer_promise, function (e) {"Error with decoding audio data" + e.error});
+        }
+    });
+     prog.tools.preloader.start();
+    
 };
 
 
@@ -661,9 +688,9 @@ prog.stop_playForFun = function () {
 };
 
 (function () {
-    prog.audio.sound = new Audio();
-    prog.audio.sound.crossOrigin = "anonymous";
-    prog.tools.preloader.add ({'target': prog.audio.sound,'src': prog.audio.sound_path});
+    //prog.audio.sound = new Audio();
+    //prog.audio.sound.crossOrigin = "anonymous";
+    // prog.tools.preloader.add ({'target': prog.audio.sound,'src': prog.audio.sound_path});
     prog.images.notes = new Image();
     prog.tools.preloader.add ({'target': prog.images.notes, 'src': "images/notes_sheet_2_small.png"});
 
