@@ -443,7 +443,14 @@ prog.init.init_panel = function () {
             e.target.innerHTML = 'Stop';
             prog.playForFun();
         }
-    }
+    };
+
+    prog.navigation.btn_just_play          = document.getElementById('btn_just_play');
+    prog.navigation.btn_just_play.onclick  = function (e) {
+        prog.justPlay = !prog.justPlay;
+        e.target.innerHTML = prog.justPlay ? 'Training' : 'Just Play';
+    };
+    prog.navigation.btn_just_play = prog.justPlay ? 'Training' : 'Just Play';
 
 };
 prog.init.init = function () {
@@ -676,7 +683,7 @@ prog.playForFun = function () {
         prog.drawNote (prog.notes_marking[prog.notes_iterator], prog.notes.note_up_green);
         ++prog.notes_iterator;
         if (prog.flag_playForFun)
-            setTimeout(f, Math.floor(Math.random()*250) + 50);
+            setTimeout(f, Math.floor(Math.random()*250) + 1);
     };
     //var id_interval = window.setInterval (f, 250);
     prog.flag_playForFun = true;
@@ -703,7 +710,7 @@ prog.stop_playForFun = function () {
             prog.mainLoop.start();
         };
         window.document.addEventListener('click', start_prog);
+        //prog.tools.simulateEvent.simulate (document, 'click');
     };
-
     prog.tools.preloader.start();
 })();

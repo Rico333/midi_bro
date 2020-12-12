@@ -12,11 +12,11 @@
 	display: inline-block;
 }
 
-#btn_play_for_fun {
+.btn {
 	background-color: #005555;
 	border: 2px solid black;
 	border-radius: 5px;
 }
-#btn_play_for_fun:hover {
+.btn:hover {
 	background-color: #555500;
 }
