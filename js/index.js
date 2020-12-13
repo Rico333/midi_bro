@@ -207,7 +207,7 @@ prog.checkHit = function (frequency, data) {
     if (data[1] == prog.notes_marking[prog.notes_iterator]) {
         //console.log ('HIT !');
         prog.audio.playNote(frequency, data);
-        prog.drawNote (prog.notes_marking[prog.notes_iterator], prog.notes.note_up_green);
+        prog.drawNote (prog.notes_iterator, prog.notes.note_up_green);
         ++prog.notes_iterator;
         if (prog.notes_iterator >= prog.notes_marking.length) {
             prog.notes_iterator = 0;
@@ -216,27 +216,37 @@ prog.checkHit = function (frequency, data) {
         }
     } else {
         //console.log ('MESS !');
-        prog.drawNote (prog.notes_marking[prog.notes_iterator], prog.notes.note_up_pink);
+        prog.drawNote (prog.notes_iterator, prog.notes.note_up_pink);
     };
 };
 
-prog.drawNote = function (id_note, notee) {
+prog.drawNote = function (id_note_iter, notee) {
     // 77 - fa - begin from up to down 100px
     //prog.notesCtx.fillStyle = colorr;
+    var id_note = prog.notes_marking[id_note_iter];
+    var snf_id_note;
+    var snf_type = prog.notes_marking_snb.length > id_note_iter ? prog.notes_marking_snb[id_note_iter] : 'w';
+    if (snf_type == 'bs') {
+        snf_id_note = id_note + 1;
+    } else if (snf_type == 'bf') {
+        snf_id_note = id_note - 1;
+    } else {
+        snf_id_note = id_note;
+    }
 
     var b = notee;
     var ns = prog.note_settings;
-    b.x = ns.strings_left_margin + 80 + prog.notes_iterator * ns.notes_step + b.x_anchor;
+    b.x = ns.strings_left_margin + 80 + id_note_iter * ns.notes_step + b.x_anchor;
     var t, k;
 
-    t = (Math.floor(id_note / 12) % 2); // get number of octave and  get first note 
-    k = id_note % 12;
+    t = (Math.floor(snf_id_note / 12) % 2); // get number of octave and  get first note 
+    k = snf_id_note % 12;
     if (t == 0) {
         if (k == 0 || k == 1 || k == 4 || k == 7 || k == 8 || k == 11) { t = 0; } else { t = 1; }
     } else {
         if (k == 0 || k == 1 || k == 4 || k == 7 || k == 8 || k == 11) { t = 1; } else { t = 0; }
     }
-    b.y = prog.notes_pos_real[id_note] + b.y_anchor;
+    b.y = prog.notes_pos_real[snf_id_note] + b.y_anchor;
     if (t == 1) {
        prog.notesCtx.fillRect(b.x-14-b.x_anchor, b.y-b.y_anchor, 26, 4);
     } else {
@@ -324,13 +334,22 @@ prog.createNotes = function () { //
     prog.notes.bassClef.x_anchor = 0;
     prog.notes.bassClef.y_anchor = 0;
 
-    prog.notes.sharp = new prog.graphics.classes.Image(prog.images.notes, 37, 39, 20, 31, 0, 0, 20, 31);
-    prog.notes.sharp.x_anchor = -10;
-    prog.notes.sharp.y_anchor = -15;
+    // prog.notes.sharp = new prog.graphics.classes.Image(prog.images.notes, 37, 39, 20, 31, 0, 0, 20, 31);
+    // prog.notes.sharp.x_anchor = -10;
+    // prog.notes.sharp.y_anchor = -15;
+    // prog.notes.sharp.x = b.x + prog.notes.sharp.x_anchor - prog.notes.sharp.width/2 ;
+    // prog.notes.sharp.y = prog.notes_pos_real[id_note] + prog.notes.sharp.y_anchor + 3;
+    prog.notes.sharp = new prog.graphics.classes.Image(prog.images.notes, 37, 39, 20, 31, 0, 0, 15, 23);
+    prog.notes.sharp.x_anchor = -6 - prog.notes.sharp.width/2;
+    prog.notes.sharp.y_anchor = -8;
 
-    prog.notes.flat = new prog.graphics.classes.Image(prog.images.notes, 37, 70, 18, 30, 0, 0, 18, 30);
-    prog.notes.flat.x_anchor = -9;
-    prog.notes.flat.y_anchor = -24;
+    // prog.notes.flat = new prog.graphics.classes.Image(prog.images.notes, 37, 70, 18, 30, 0, 0, 18, 30);
+    // prog.notes.flat.x_anchor = -9;
+    // prog.notes.flat.y_anchor = -24;
+    prog.notes.flat = new prog.graphics.classes.Image(prog.images.notes, 37, 70, 18, 30, 0, 0, 12, 24);
+    prog.notes.flat.x_anchor = -2 - prog.notes.sharp.width/2;
+    prog.notes.flat.y_anchor = -16;
+    
 
     prog.notes.note_up = new prog.graphics.classes.Image(prog.images.notes, 73, 0, 17, 43, 0, 0, 17, 43);
     prog.notes.note_up.x_anchor = -10;
@@ -544,14 +563,57 @@ prog.generateNotes = function (params) {
     if (params.to < params.from) { params.from = 1; params.to = 128; };
     if (!params.sharp) { params.sharp = false; }
     if (!params.flat)  { params.flat  = false; }
+
     var gap = params.to - params.from + 1;
     //console.log ('from = '+ from +', to = '+to+", gap = "+gap);
-    var i = 0, l, k, notes = [];
+    var i = 0, l, k, t, id_note, type_note, id_note_pos, notes = [];
     prog.notes_marking = [];
-    if (params.sharp && params.flat) {
+    prog.notes_marking_snb = []; // white sharp = ws = 1 or white = w = 0 or white flat = wf = 2,   black sharp = bs = 0,  black flat = bf = 1
+    if (true || params.sharp && params.flat) {
         while (i < params.amount) {
+
+            //id_note = params.from + Math.floor(Math.random() * gap);
+            // k = i % 12;
+            //if (k != 1 && k != 3 && k != 6 && k != 8 && k != 10) { // white
+            //    t = Math.floor(Math.random()*3);
+            //    if (t == 0) {
+            //        prog.notes_marking_snb.push({'type':'w', 'id_note': id_note});
+            //    } else if (t == 1) {
+            //        prog.notes_marking_snb.push('ws');
+            //    } else {
+            //        prog.notes_marking_snb.push('wb');
+            //    }
+            //} else { // black
+            //    t = Math.floor(Math.random()*2);
+            //    if (t == 0) {
+            //        prog.notes_marking_snb.push('bs');
+            //    } else if (t == 1) {
+            //        prog.notes_marking_snb.push('bf');
+            //    }
+            //}
+            //++i;
+
+
             prog.notes_marking.push(params.from + Math.floor(Math.random() * gap));
             // prog.notes_marking.push(36+i);
+             k = i % 12;
+            if (k != 1 && k != 3 && k != 6 && k != 8 && k != 10) { // white
+                t = Math.floor(Math.random()*3);
+                if (t == 0) {
+                    prog.notes_marking_snb.push('w');
+                } else if (t == 1) {
+                    prog.notes_marking_snb.push('ws');
+                } else {
+                    prog.notes_marking_snb.push('wb');
+                }
+            } else { // black
+                t = Math.floor(Math.random()*2);
+                if (t == 0) {
+                    prog.notes_marking_snb.push('bs');
+                } else if (t == 1) {
+                    prog.notes_marking_snb.push('bf');
+                }
+            }
             ++i;
         }
     } else {
@@ -600,15 +662,27 @@ prog.redrawNotes = function () {
     prog.notes.bassClef.draw(prog.notesCtx);
     //prog.notesCtx.drawImage(prog.notes.trebleClef.image, 0, 0, prog.notes.trebleClef.width_src, prog.notes.trebleClef.height_src, 60 + prog.notes.trebleClef.x_anchor, 125 + prog.notes.trebleClef.y_anchor, prog.notes.trebleClef.width_src, prog.notes.trebleClef.height_src, );
     
-
+    //prog.notesCtx.shadowBlur = 2;
+    //prog.notesCtx.shadowColor = "#000055";
+    var snf_type, snf_id_note;
     var x_hatch, y_hatch, l_hatch;
     var xx = ns.strings_left_margin + 80, yy, t, k, id_note, top_border_id = 77, bottom_border_id = 43, gap_border, i_border, l_border;
     var i = 0, l = prog.notes_marking.length;
     var b = prog.notes.note_up;
     while (i < l) {
         id_note = prog.notes_marking[i];
-        t = (Math.floor(id_note / 12) % 2); // get number of octave and  get first note 
-        k = id_note % 12;
+        
+        snf_type = prog.notes_marking_snb.length > i ? prog.notes_marking_snb[i] : 'w';
+        if (snf_type == 'bs') {
+            snf_id_note = id_note + 1;
+        } else if (snf_type == 'bf') {
+            snf_id_note = id_note - 1;
+        } else {
+            snf_id_note = id_note;
+        }
+
+        t = (Math.floor(snf_id_note / 12) % 2); // get number of octave and  get first note 
+        k = snf_id_note % 12;
         // if (k == 0 || k == 1 || k == 4 || k == 7 || k == 8 || k == 11) { t = t == 1 ? 1 : 0; } else { t = t == 1 ? 0 : 1; }
         if (t == 0) {
             if (k == 0 || k == 1 || k == 4 || k == 7 || k == 8 || k == 11) { t = 0; } else { t = 1; }
@@ -616,20 +690,22 @@ prog.redrawNotes = function () {
             if (k == 0 || k == 1 || k == 4 || k == 7 || k == 8 || k == 11) { t = 1; } else { t = 0; }
         }
         b.x = xx + b.x_anchor;
-        b.y = prog.notes_pos_real[id_note] + b.y_anchor;
+        b.y = prog.notes_pos_real[snf_id_note] + b.y_anchor;
         x_hatch = b.x-14-b.x_anchor;
         if (t == 1) {
             yy = b.y-b.y_anchor;
-            prog.notesCtx.fillRect(b.x-14-b.x_anchor, b.y-b.y_anchor, 26, 4);
+            //prog.notesCtx.fillRect(b.x-14-b.x_anchor, b.y-b.y_anchor, 26, 4);
         } else {
             yy = b.y-3+b.height;
-            prog.notesCtx.fillRect(b.x-14-b.x_anchor, b.y-3+b.height, 26, 4);
+            //prog.notesCtx.fillRect(b.x-14-b.x_anchor, b.y-3+b.height, 26, 4);
         }
-        if ( id_note > top_border_id) {
-            i_border = top_border_id + 1; l_border = id_note + 2;
+
+        if ( snf_id_note > top_border_id) {
+            i_border = top_border_id + 1;   l_border = snf_id_note + 1;
         } else {
-            i_border = id_note + 1; l_border = bottom_border_id - 1;
+            i_border = snf_id_note + 1;     l_border = bottom_border_id - 1;
         }
+
         while (i_border <= l_border) {
             t = (Math.floor(i_border / 12) % 2); // get number of octave and  get first note 
             k = i_border % 12;
@@ -644,12 +720,29 @@ prog.redrawNotes = function () {
             }
             ++i_border;
         }
+
+       
         b.draw(prog.notesCtx);
+        if (snf_type == 'ws' || snf_type == 'bs') {
+            prog.notes.sharp.x = b.x + prog.notes.sharp.x_anchor;
+            prog.notes.sharp.y = prog.notes_pos_real[snf_id_note] + prog.notes.sharp.y_anchor;
+            prog.notes.sharp.draw(prog.notesCtx);
+        } else if (snf_type == 'wf' || snf_type == 'bf') {
+            prog.notes.flat.x = b.x + prog.notes.flat.x_anchor;
+            prog.notes.flat.y = prog.notes_pos_real[snf_id_note] + prog.notes.flat.y_anchor;
+            prog.notes.flat.draw(prog.notesCtx);
+        }
+       
         xx += ns.notes_step;
        ++i;
     }
 }
 prog.initGraphics = function () {
+
+    // change color prog.images.notes
+        prog.images.notes_image_src = prog.images.notes; // '#296735'  '#0955ff'
+        prog.images.notes = prog.graphics.getCopyImageWithChangedColor(null, prog.images.notes_image_src, '#0955ff').canvas;
+    //
     
     document.getElementById('main-container').appendChild(prog.graphics.canvas);
     prog.notes.container = new prog.graphics.classes.Container();
@@ -669,7 +762,7 @@ prog.playForFun = function () {
     var f = function () {
         if (prog.notes_iterator > 0) {
            --prog.notes_iterator;
-           prog.drawNote (prog.notes_marking[prog.notes_iterator], prog.notes.note_up);
+           prog.drawNote (prog.notes_iterator, prog.notes.note_up);
            ++prog.notes_iterator;
         }
         if (prog.notes_iterator >= prog.notes_marking.length) {
@@ -680,7 +773,7 @@ prog.playForFun = function () {
         var data = [128, prog.notes_marking[prog.notes_iterator], 65];
         var frequency = prog.audio.midiNoteToFrequency(data[1]);
         prog.audio.playNote(frequency, data);
-        prog.drawNote (prog.notes_marking[prog.notes_iterator], prog.notes.note_up_green);
+        prog.drawNote (prog.notes_iterator, prog.notes.note_up_green);
         ++prog.notes_iterator;
         if (prog.flag_playForFun)
             setTimeout(f, Math.floor(Math.random()*250) + 1);
