@@ -12,8 +12,8 @@
 			<span><b>MIDI BRO</b></span>
 			<div>
 				<button id="btn_generate_notes">Generate Notes</button>
-				first note id <input id="input_making_notes_from" type="text" value="35"/>
-				last note id  <input id="input_making_notes_to" type="text" value="89" />
+				first note id <input id="input_making_notes_from" type="text"   value="36"   class="w-40" />
+				last note id  <input id="input_making_notes_to"   type="text"   value="89"   class="w-40" />
 				<div class="slidecontainer" id="slider_volume">
   					Volume : <input type="range" min="1" max="100" value="33" class="slider">
   					<b>33</b>
@@ -26,10 +26,13 @@
   					<input type="range" min="1" max="100" value="100" class="slider">
   					<b>100</b>
 				</div>-->
-				Sound : <input type="file"  id="newSound" />
-				<br />
+				<input type="file"  id="newSound"  class="d-none" />
+				<label for="newSound" class="btn">load Sound</label>
 				<button id="btn_play_for_fun" class="btn">Play</button>
 				<button id="btn_just_play" class="btn">Just Play</button>
+				Use Sharp - Flat : <input type="checkbox" id="use_sharp_flat" />
+				ht : <input id="set_strings_h_thickness" type="text"   value="3"   class="w-40" />
+				vt : <input id="set_strings_v_thickness" type="text"   value="2"   class="w-40" />
 			</div>
 			<br />
 			

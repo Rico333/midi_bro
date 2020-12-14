@@ -211,7 +211,7 @@ prog.checkHit = function (frequency, data) {
         ++prog.notes_iterator;
         if (prog.notes_iterator >= prog.notes_marking.length) {
             prog.notes_iterator = 0;
-            prog.generateNotes({'from': parseInt(prog.navigation.input_making_notes_from.value), 'to': parseInt(prog.navigation.input_making_notes_to.value), 'amount':prog.note_settings.amount_notes});
+            prog.generateNotes({'from': parseInt(prog.navigation.input_making_notes_from.value), 'to': parseInt(prog.navigation.input_making_notes_to.value), 'amount':prog.note_settings.amount_notes, 'use_sharp_flat': prog.use_sharp_flat});
             prog.restartNotes();
         }
     } else {
@@ -225,33 +225,12 @@ prog.drawNote = function (id_note_iter, notee) {
     //prog.notesCtx.fillStyle = colorr;
     var id_note = prog.notes_marking[id_note_iter];
     var snf_id_note;
-    var snf_type = prog.notes_marking_snb.length > id_note_iter ? prog.notes_marking_snb[id_note_iter] : 'w';
-    if (snf_type == 'bs') {
-        snf_id_note = id_note + 1;
-    } else if (snf_type == 'bf') {
-        snf_id_note = id_note - 1;
-    } else {
-        snf_id_note = id_note;
-    }
-
+    var snf_type = prog.notes_marking_snf.length > id_note_iter ? prog.notes_marking_snf[id_note_iter] : 'w';
+    var snf_id_note = id_note + prog.get_snf_modifier(snf_type, id_note);
     var b = notee;
     var ns = prog.note_settings;
     b.x = ns.strings_left_margin + 80 + id_note_iter * ns.notes_step + b.x_anchor;
-    var t, k;
-
-    t = (Math.floor(snf_id_note / 12) % 2); // get number of octave and  get first note 
-    k = snf_id_note % 12;
-    if (t == 0) {
-        if (k == 0 || k == 1 || k == 4 || k == 7 || k == 8 || k == 11) { t = 0; } else { t = 1; }
-    } else {
-        if (k == 0 || k == 1 || k == 4 || k == 7 || k == 8 || k == 11) { t = 1; } else { t = 0; }
-    }
     b.y = prog.notes_pos_real[snf_id_note] + b.y_anchor;
-    if (t == 1) {
-       prog.notesCtx.fillRect(b.x-14-b.x_anchor, b.y-b.y_anchor, 26, 4);
-    } else {
-       prog.notesCtx.fillRect(b.x-14-b.x_anchor, b.y-3+b.height, 26, 4);
-    }
     b.draw(prog.notesCtx);
    
 };
@@ -410,7 +389,7 @@ prog.init.init_panel = function () {
     prog.navigation.input_making_notes_to   = document.getElementById('input_making_notes_to');
     prog.navigation.btn_generate_notes      = document.getElementById('btn_generate_notes');
     prog.navigation.btn_generate_notes.onclick = function (e) {
-        prog.generateNotes({'from': parseInt(prog.navigation.input_making_notes_from.value), 'to': parseInt(prog.navigation.input_making_notes_to.value), 'amount':prog.note_settings.amount_notes});
+        prog.generateNotes({'from': parseInt(prog.navigation.input_making_notes_from.value), 'to': parseInt(prog.navigation.input_making_notes_to.value), 'amount':prog.note_settings.amount_notes, 'use_sharp_flat': prog.use_sharp_flat});
         prog.redrawNotes();
         prog.notes_iterator = 0;
     };
@@ -471,6 +450,21 @@ prog.init.init_panel = function () {
     };
     prog.navigation.btn_just_play = prog.justPlay ? 'Training' : 'Just Play';
 
+
+    prog.navigation.use_sharp_flat           = document.getElementById('use_sharp_flat');
+    prog.navigation.use_sharp_flat.onchange  = function (e) {
+        prog.use_sharp_flat = e.target.checked;
+    };
+
+    prog.navigation.set_strings_h_thickness           = document.getElementById('set_strings_h_thickness');
+    prog.navigation.set_strings_h_thickness.onchange  = function (e) {
+        prog.note_settings.strings_thickness = parseInt(e.target.value);
+    };
+
+    prog.navigation.set_strings_v_thickness           = document.getElementById('set_strings_v_thickness');
+    prog.navigation.set_strings_v_thickness.onchange  = function (e) {
+        prog.note_settings.strings_vert_thickness = parseInt(e.target.value);
+    };
 };
 prog.init.init = function () {
     var i, l, t, hh, gap;
@@ -513,7 +507,7 @@ prog.init.init = function () {
         strings_horiz_step: gap * 2,
         strings_left_margin: 20,
         strings_right_margin: 20,
-        strings_thickness: 4,
+        strings_thickness: 3,
         strings_vert_thickness: 2,
         strings_vert_step: 120,
         strings_vert_x_start: 85,
@@ -542,7 +536,7 @@ prog.init.init = function () {
     prog.graphics.canvas.height = prog.notes_pos_real[0] + ns.canvas_padding_bottom;
     ns.amount_notes = Math.floor((prog.graphics.canvas.width - ns.strings_left_margin - ns.strings_right_margin - 80) / ns.notes_step);
 
-    prog.generateNotes({'from':36, 'to':96, 'amount':ns.amount_notes});
+    prog.generateNotes({'from':36, 'to':96, 'amount':ns.amount_notes, 'use_sharp_flat': prog.use_sharp_flat});
     prog.initGraphics();
 
     prog.init.init_panel();
@@ -554,8 +548,7 @@ prog.init.init = function () {
     from: 0-127   - diapason from
     to: 0-127     - diapason to
     ampunt        - amount of generated notes
-    sharp: true   - use sharp
-    flat:  true   - use flat
+    use_sharp_flat: true   - use sharp and flat
 */
 prog.generateNotes = function (params) {
     if (!params.from || params.from < 0) { params.from = 0; };
@@ -568,51 +561,38 @@ prog.generateNotes = function (params) {
     //console.log ('from = '+ from +', to = '+to+", gap = "+gap);
     var i = 0, l, k, t, id_note, type_note, id_note_pos, notes = [];
     prog.notes_marking = [];
-    prog.notes_marking_snb = []; // white sharp = ws = 1 or white = w = 0 or white flat = wf = 2,   black sharp = bs = 0,  black flat = bf = 1
-    if (true || params.sharp && params.flat) {
+    prog.notes_marking_snf = []; // white sharp = ws = 1 or white = w = 0 or white flat = wf = 2,   black sharp = bs = 0,  black flat = bf = 1
+    if (params.use_sharp_flat) {
         while (i < params.amount) {
-
-            //id_note = params.from + Math.floor(Math.random() * gap);
-            // k = i % 12;
-            //if (k != 1 && k != 3 && k != 6 && k != 8 && k != 10) { // white
-            //    t = Math.floor(Math.random()*3);
-            //    if (t == 0) {
-            //        prog.notes_marking_snb.push({'type':'w', 'id_note': id_note});
-            //    } else if (t == 1) {
-            //        prog.notes_marking_snb.push('ws');
-            //    } else {
-            //        prog.notes_marking_snb.push('wb');
-            //    }
-            //} else { // black
-            //    t = Math.floor(Math.random()*2);
-            //    if (t == 0) {
-            //        prog.notes_marking_snb.push('bs');
-            //    } else if (t == 1) {
-            //        prog.notes_marking_snb.push('bf');
-            //    }
-            //}
-            //++i;
-
-
-            prog.notes_marking.push(params.from + Math.floor(Math.random() * gap));
+            id_note = params.from + Math.floor(Math.random() * gap);
+            prog.notes_marking.push(id_note);
             // prog.notes_marking.push(36+i);
-             k = i % 12;
-            if (k != 1 && k != 3 && k != 6 && k != 8 && k != 10) { // white
-                t = Math.floor(Math.random()*3);
-                if (t == 0) {
-                    prog.notes_marking_snb.push('w');
-                } else if (t == 1) {
-                    prog.notes_marking_snb.push('ws');
-                } else {
-                    prog.notes_marking_snb.push('wb');
-                }
-            } else { // black
+             k = id_note % 12;
+            if (k == 1 || k == 3 || k == 6 || k == 8 || k == 10) { // black
                 t = Math.floor(Math.random()*2);
                 if (t == 0) {
-                    prog.notes_marking_snb.push('bs');
-                } else if (t == 1) {
-                    prog.notes_marking_snb.push('bf');
+                    prog.notes_marking_snf.push('bs');
+                } else {
+                    prog.notes_marking_snf.push('bf');
                 }
+            } else { // white
+                t = Math.floor(Math.random()*2);
+                if (k == 0 || k == 5) {
+                    if (t == 0) {
+                        prog.notes_marking_snf.push('w');
+                    } else {
+                        prog.notes_marking_snf.push('ws');
+                    }
+                } else if (k == 4 || k == 11) {
+                    if (t == 0) {
+                        prog.notes_marking_snf.push('w');
+                    } else {
+                        prog.notes_marking_snf.push('wf');
+                    }
+                } else {
+                    prog.notes_marking_snf.push('w');
+                }
+               
             }
             ++i;
         }
@@ -641,7 +621,30 @@ prog.restartNotes = function () {
 }
 
 
-
+prog.get_snf_modifier = function (snf_type, id_note) {
+    var k = id_note % 12;
+    if (snf_type == 'bs') {
+        return -1;
+    } else if (snf_type == 'bf') {
+        return 1;
+    } else  if (snf_type == 'ws') {
+        if (k == 0 || k == 5)
+            return -1;
+    } else if (snf_type == 'wf'){
+        if (k == 4 || k == 11)
+            return 1;
+    }
+    return 0
+};
+prog.get_snf_modifier_1 = function (snf_type, id_note) {
+    var k = id_note % 12;
+    if (snf_type == 'bs') {
+        return -1;
+    } else if (snf_type == 'bf') {
+        return 1;
+    }
+    return 0
+};
 prog.redrawNotes = function () {
     var ns = prog.note_settings;
     if (!prog.notesCtx) {
@@ -672,14 +675,9 @@ prog.redrawNotes = function () {
     while (i < l) {
         id_note = prog.notes_marking[i];
         
-        snf_type = prog.notes_marking_snb.length > i ? prog.notes_marking_snb[i] : 'w';
-        if (snf_type == 'bs') {
-            snf_id_note = id_note + 1;
-        } else if (snf_type == 'bf') {
-            snf_id_note = id_note - 1;
-        } else {
-            snf_id_note = id_note;
-        }
+        
+        snf_type = prog.notes_marking_snf.length > i ? prog.notes_marking_snf[i] : 'w';
+        snf_id_note = id_note + prog.get_snf_modifier(snf_type, id_note);
 
         t = (Math.floor(snf_id_note / 12) % 2); // get number of octave and  get first note 
         k = snf_id_note % 12;
@@ -699,28 +697,33 @@ prog.redrawNotes = function () {
             yy = b.y-3+b.height;
             //prog.notesCtx.fillRect(b.x-14-b.x_anchor, b.y-3+b.height, 26, 4);
         }
-
-        if ( snf_id_note > top_border_id) {
-            i_border = top_border_id + 1;   l_border = snf_id_note + 1;
-        } else {
+        t = 0;
+        if (snf_id_note > top_border_id) {
+            t = 1;
+            i_border = top_border_id + 1;   l_border = snf_id_note + 2;
+        } else if (snf_id_note < bottom_border_id) {
+            t = 1;
             i_border = snf_id_note + 1;     l_border = bottom_border_id - 1;
+        } else if (snf_id_note ==  60) {
+            prog.notesCtx.fillRect(x_hatch, prog.notes_pos_real[snf_id_note], 26, ns.strings_thickness);
         }
-
-        while (i_border <= l_border) {
-            t = (Math.floor(i_border / 12) % 2); // get number of octave and  get first note 
-            k = i_border % 12;
-            if (t == 0) {
-                if (k == 0 || k == 4 || k == 7 || k == 11) {
-                     prog.notesCtx.fillRect(x_hatch, prog.notes_pos_real[i_border] + 6, 26, 4);
+        
+        if (t == 1) {
+            while (i_border <= l_border) {
+                t = (Math.floor(i_border / 12) % 2); // get number of octave and  get first note 
+                k = i_border % 12;
+                if (t == 0) {
+                    if (k == 0 || k == 4 || k == 7 || k == 11) {
+                         prog.notesCtx.fillRect(x_hatch, prog.notes_pos_real[i_border] + 6, 26, ns.strings_thickness);
+                    }
+                } else {
+                     if (k == 2 || k == 5 ||  k == 9) {
+                         prog.notesCtx.fillRect(x_hatch, prog.notes_pos_real[i_border] + 6, 26, ns.strings_thickness);
+                    }
                 }
-            } else {
-                 if (k == 2 || k == 5 ||  k == 9) {
-                     prog.notesCtx.fillRect(x_hatch, prog.notes_pos_real[i_border] + 6, 26, 4);
-                }
+                ++i_border;
             }
-            ++i_border;
         }
-
        
         b.draw(prog.notesCtx);
         if (snf_type == 'ws' || snf_type == 'bs') {
@@ -767,7 +770,7 @@ prog.playForFun = function () {
         }
         if (prog.notes_iterator >= prog.notes_marking.length) {
             prog.notes_iterator = 0;
-            prog.generateNotes({'from': parseInt(prog.navigation.input_making_notes_from.value), 'to': parseInt(prog.navigation.input_making_notes_to.value), 'amount':prog.note_settings.amount_notes});
+            prog.generateNotes({'from': parseInt(prog.navigation.input_making_notes_from.value), 'to': parseInt(prog.navigation.input_making_notes_to.value), 'amount':prog.note_settings.amount_notes, 'use_sharp_flat': prog.use_sharp_flat});
             prog.restartNotes();
         }
         var data = [128, prog.notes_marking[prog.notes_iterator], 65];

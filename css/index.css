@@ -16,7 +16,14 @@
 	background-color: #005555;
 	border: 2px solid black;
 	border-radius: 5px;
+	padding: 4px;
 }
 .btn:hover {
 	background-color: #555500;
+}
+.w-40 {
+	width: 40px;
+}
+.d-none {
+	display: none;
 }
