@@ -450,11 +450,17 @@ prog.init.init_panel = function () {
     };
     prog.navigation.btn_just_play = prog.justPlay ? 'Training' : 'Just Play';
 
+    prog.navigation.use_unique_notes           = document.getElementById('use_unique_notes');
+    prog.navigation.use_unique_notes.onchange  = function (e) {
+        prog.use_unique_notes = e.target.checked;
+    };
+    prog.use_unique_notes = prog.navigation.use_unique_notes.checked;
 
     prog.navigation.use_sharp_flat           = document.getElementById('use_sharp_flat');
     prog.navigation.use_sharp_flat.onchange  = function (e) {
         prog.use_sharp_flat = e.target.checked;
     };
+    prog.use_sharp_flat = prog.navigation.use_sharp_flat.checked;
 
     prog.navigation.set_strings_h_thickness           = document.getElementById('set_strings_h_thickness');
     prog.navigation.set_strings_h_thickness.onchange  = function (e) {
@@ -544,6 +550,36 @@ prog.init.init = function () {
     prog.audio.connectMIDI();
 };
 
+prog.getRandomSharpFlatCodeByIdNote = function (id_note) {
+    var code, t;
+    var k = id_note % 12;
+    if (k == 1 || k == 3 || k == 6 || k == 8 || k == 10) { // black
+        t = Math.floor(Math.random()*2);
+        if (t == 0) {
+            code = 'bs';
+        } else {
+            code = 'bf';
+        }
+    } else { // white
+        t = Math.floor(Math.random()*2);
+        if (k == 0 || k == 5) {
+            if (t == 0) {
+                code = 'w';
+            } else {
+                code = 'ws';
+            }
+        } else if (k == 4 || k == 11) {
+            if (t == 0) {
+                code = 'w';
+            } else {
+                code = 'wf';
+            }
+        } else {
+            code = 'w';
+        }
+    }
+    return code;
+};
 /**
     from: 0-127   - diapason from
     to: 0-127     - diapason to
@@ -559,58 +595,69 @@ prog.generateNotes = function (params) {
 
     var gap = params.to - params.from + 1;
     //console.log ('from = '+ from +', to = '+to+", gap = "+gap);
-    var i = 0, l, k, t, id_note, type_note, id_note_pos, notes = [];
+    var i = 0, l, k, t, id_note, type_note, id_note_pos, notes = [], notes2;
     prog.notes_marking = [];
     prog.notes_marking_snf = []; // white sharp = ws = 1 or white = w = 0 or white flat = wf = 2,   black sharp = bs = 0,  black flat = bf = 1
     if (params.use_sharp_flat) {
-        while (i < params.amount) {
-            id_note = params.from + Math.floor(Math.random() * gap);
-            prog.notes_marking.push(id_note);
-            // prog.notes_marking.push(36+i);
-             k = id_note % 12;
-            if (k == 1 || k == 3 || k == 6 || k == 8 || k == 10) { // black
-                t = Math.floor(Math.random()*2);
-                if (t == 0) {
-                    prog.notes_marking_snf.push('bs');
-                } else {
-                    prog.notes_marking_snf.push('bf');
+
+        if (prog.use_unique_notes) {
+            i = params.from;
+            l = params.to + 1;
+            while (i < l) { notes.push(i); ++i; };
+
+            while (prog.notes_marking.length < params.amount) {
+                if (notes.length <= 0) {
+                    console.error ('Amount notes for generate, lower or equals 0, change <form> and <to> parameters');
+                    break;
                 }
-            } else { // white
-                t = Math.floor(Math.random()*2);
-                if (k == 0 || k == 5) {
-                    if (t == 0) {
-                        prog.notes_marking_snf.push('w');
-                    } else {
-                        prog.notes_marking_snf.push('ws');
-                    }
-                } else if (k == 4 || k == 11) {
-                    if (t == 0) {
-                        prog.notes_marking_snf.push('w');
-                    } else {
-                        prog.notes_marking_snf.push('wf');
-                    }
-                } else {
-                    prog.notes_marking_snf.push('w');
+                notes2 = [].concat(notes);
+                while (notes2.length > 0 && prog.notes_marking.length < params.amount) {
+                    i = Math.floor(Math.random()*notes2.length);
+                    prog.notes_marking.push(notes2[i]);
+                    prog.notes_marking_snf.push ( prog.getRandomSharpFlatCodeByIdNote(notes2[i]) );
+                    notes2.splice(i,1)
                 }
-               
             }
-            ++i;
+        } else {
+           while (i < params.amount) {
+                id_note = params.from + Math.floor(Math.random() * gap);
+                prog.notes_marking.push(id_note);
+                prog.notes_marking_snf.push ( prog.getRandomSharpFlatCodeByIdNote(id_note) );
+                ++i;
+            }
         }
+
+        
     } else {
         i = params.from;
-        l = params.to >= 128 ? 128 : params.to + 1;
+        l = params.to + 1;
         while (i < l) {
             k = i % 12;
-            if (k != 1 && k != 3 && k != 6 && k != 8 && k != 10) {
+            if (k != 1 && k != 3 && k != 6 && k != 8 && k != 10) { // if white note
                 notes.push(i);
             }
             ++i;
         };
-        i = 0, l = notes.length;
-        while (i < params.amount) {
-            prog.notes_marking.push(notes[Math.floor(Math.random() * notes.length)]);
-            // prog.notes_marking.push(notes[i]);
-            ++i;
+        
+        if (prog.use_unique_notes) {
+            while (prog.notes_marking.length < params.amount) {
+                if (notes.length <= 0) {
+                    console.error ('Amount notes for generate, lower or equals 0, change <form> and <to> parameters');
+                    break;
+                }
+                notes2 = [].concat(notes);
+                while (notes2.length > 0 && prog.notes_marking.length < params.amount) {
+                    i = Math.floor(Math.random()*notes2.length);
+                    prog.notes_marking.push(notes2[i]);
+                    notes2.splice(i,1)
+                }
+            }
+        } else { 
+            i = 0; l = notes.length;
+            while (i < params.amount) {
+                prog.notes_marking.push(notes[Math.floor(Math.random() * l)]);
+                ++i;
+            }
         }
     }
 

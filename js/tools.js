@@ -209,7 +209,33 @@ prog.tools.simulateEvent = {
 	},
 };
 
-
+prog.tools.array = {
+	shuffle: function (arr, save_source) {
+		var i, k, b, l = arr.length;
+		var result;
+		if (save_source) {
+			i = 0;
+			result = new Array(l);
+			while (i < l ) {
+				result[i] = arr[i];
+				++i;
+			}
+		} else {
+			 result = arr;
+		}
+		i = 0;
+		while (i < l) {
+			k = Math.floor(Math.random()*l);
+			if (k != i) {
+				b = result[i];
+				result[i] = result[k];
+				result[k] = b;
+			}
+			++i;
+		}
+		return result;
+	}
+};
 
 
 (function () {
